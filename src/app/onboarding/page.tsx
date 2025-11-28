@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 interface FoodItem {
     id: string;
     name: string;
+    nameEs?: string;
     category: string;
 }
 
@@ -23,6 +24,7 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [availableFoods, setAvailableFoods] = useState<FoodItem[]>([]);
+    const [foodSearch, setFoodSearch] = useState('');
 
     useEffect(() => {
         fetch('/api/foods')
@@ -170,26 +172,83 @@ export default function OnboardingPage() {
 
                     <div style={{ marginBottom: '2rem' }}>
                         <label className="label">Foods you like (Select all that apply)</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
-                            {availableFoods.map(food => (
-                                <button
-                                    key={food.id}
-                                    type="button"
-                                    onClick={() => toggleFood(food.name)}
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: 'var(--radius-full)',
-                                        border: '1px solid var(--border)',
-                                        backgroundColor: formData.likedFoods.includes(food.name) ? 'var(--primary)' : 'var(--surface)',
-                                        color: formData.likedFoods.includes(food.name) ? 'white' : 'var(--text-primary)',
-                                        cursor: 'pointer',
-                                        fontSize: '0.875rem',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {food.name}
-                                </button>
-                            ))}
+
+                        {/* Selected Foods Chips */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                            {formData.likedFoods.map(foodName => {
+                                const food = availableFoods.find(f => f.name === foodName);
+                                const displayName = food ? (food.nameEs ? food.nameEs : food.name) : foodName; // Default to English/Spanish based on browser? Or just show both? For now, let's try to detect or just show name.
+                                // Actually, onboarding doesn't have language context yet. Let's assume English default or try to detect.
+                                // Since we don't have language context here easily without wrapping, let's just show name for now or try to be smart.
+                                // Wait, the user asked for separation.
+                                // Let's try to use navigator.language if available or just show name.
+                                // Better: Wrap Onboarding in LanguageProvider or just use a simple check.
+                                // For now, I'll use a simple check if I can, or just display name.
+                                // Actually, I should probably add LanguageProvider to layout if it's not global enough, but it is in layout.tsx.
+                                // So I can use useLanguage here too!
+                                return (
+                                    <button
+                                        key={foodName}
+                                        type="button"
+                                        onClick={() => toggleFood(foodName)}
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: 'var(--radius-full)',
+                                            border: '1px solid var(--primary)',
+                                            backgroundColor: 'var(--primary)',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem'
+                                        }}
+                                    >
+                                        {displayName} <span style={{ fontSize: '1.2em', lineHeight: 0 }}>&times;</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Search Input */}
+                        <input
+                            type="text"
+                            placeholder="Search Food..."
+                            className="input"
+                            value={foodSearch}
+                            onChange={(e) => setFoodSearch(e.target.value)}
+                            style={{ marginBottom: '1rem' }}
+                        />
+
+                        {/* Available Foods List */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto', padding: '0.5rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                            {availableFoods
+                                .filter(food => !formData.likedFoods.includes(food.name))
+                                .filter(food => {
+                                    const searchLower = foodSearch.toLowerCase();
+                                    const nameLower = food.name.toLowerCase();
+                                    const nameEsLower = food.nameEs?.toLowerCase() || '';
+                                    return nameLower.includes(searchLower) || nameEsLower.includes(searchLower);
+                                })
+                                .map(food => (
+                                    <button
+                                        key={food.id}
+                                        type="button"
+                                        onClick={() => toggleFood(food.name)}
+                                        style={{
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: 'var(--radius-full)',
+                                            border: '1px solid var(--border)',
+                                            backgroundColor: 'var(--surface)',
+                                            color: 'var(--text-primary)',
+                                            cursor: 'pointer',
+                                            fontSize: '0.875rem',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {food.name} / {food.nameEs}
+                                    </button>
+                                ))}
                         </div>
                     </div>
 

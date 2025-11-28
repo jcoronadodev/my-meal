@@ -4,39 +4,39 @@
   --primary-hover: #FF5252;
   --secondary: #4ECDC4;
   --accent: #FFE66D;
-  
+
   /* Neutral Colors */
   --background: #F7F9FC;
   --surface: #FFFFFF;
   --text-primary: #2D3436;
   --text-secondary: #636E72;
   --border: #DFE6E9;
-  
+
   /* Status Colors */
   --success: #00B894;
   --warning: #FDCB6E;
   --error: #D63031;
-  
+
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  
+
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
-  
+
   /* Radius */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 16px;
   --radius-full: 9999px;
-  
+
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -50,6 +50,8 @@ body {
   background-color: var(--background);
   color: var(--text-primary);
   line-height: 1.5;
+  padding-bottom: 80px;
+  /* Space for bottom navigation */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -65,9 +67,15 @@ button {
 
 /* Utility Classes */
 .container {
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 0 var(--spacing-md);
+  padding: 0 var(--spacing-lg);
+  /* Increased padding for mobile */
+}
+
+.container-narrow {
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .btn {
@@ -129,4 +137,100 @@ button {
   font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: var(--spacing-xs);
+}
+
+/* Mobile First Responsive Utilities */
+
+/* Header: Stacked by default (Mobile) */
+.header-responsive {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* Grid: 1 column by default (Mobile) */
+.grid-responsive {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Section Header: Stacked by default (Mobile) */
+.section-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.section-header button {
+  width: 100%;
+}
+
+/* Log Item: Stacked or simple flex */
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: var(--background);
+  border-radius: var(--radius-sm);
+}
+
+/* Form Grid: 1 column by default (Mobile) */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Desktop Overrides (min-width: 768px) */
+@media (min-width: 768px) {
+  .container {
+    max-width: 1200px;
+    padding: 0 var(--spacing-md);
+    /* Standard padding for desktop */
+  }
+
+  .header-responsive {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .header-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .grid-responsive {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .section-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-header button {
+    width: auto;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }

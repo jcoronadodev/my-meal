@@ -29,6 +29,7 @@ export async function POST(request: Request) {
                 gender,
                 birthDate: new Date(birthDate),
                 likedFoods: likedFoods || '',
+                dailyMeals: body.dailyMeals ? parseInt(body.dailyMeals) : 4,
             },
             create: {
                 userId: session.user.id,
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
                 gender,
                 birthDate: new Date(birthDate),
                 likedFoods: likedFoods || '',
+                dailyMeals: body.dailyMeals ? parseInt(body.dailyMeals) : 4,
             },
         });
 

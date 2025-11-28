@@ -16,6 +16,18 @@ model User {
   updatedAt DateTime @updatedAt
   profile   Profile?
   foodLogs  FoodLog[]
+  progressLogs ProgressLog[]
+}
+
+model ProgressLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  date      DateTime
+  weight    Float
+  waistSize Float?
+  notes     String?
+  createdAt DateTime @default(now())
 }
 
 model Profile {
@@ -31,6 +43,7 @@ model Profile {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   likedFoods    String   @default("") // Comma separated list of food IDs or names
+  dailyMeals    Int      @default(4)
 }
 
 model FoodLog {
@@ -50,11 +63,16 @@ model FoodLog {
 model FoodItem {
   id             String   @id @default(uuid())
   name           String   @unique
+  nameEs         String?
+  barcode        String?  @unique
+  brand          String?
   caloriesPer100g Int
   proteinPer100g Float
   carbsPer100g   Float
   fatPer100g     Float
   category       String?
+  servingSize    Float?   // grams per serving unit (e.g. 30g per slice)
+  servingUnit    String?  // e.g. "slice", "unit", "cup"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

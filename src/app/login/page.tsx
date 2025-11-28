@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function LoginPage() {
+    const { t } = useLanguage();
     const router = useRouter();
     const [formData, setFormData] = useState({
         email: '',
@@ -28,7 +30,7 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Something went wrong');
+                throw new Error(data.error || t('auth.errorGeneric'));
             }
 
             router.push('/dashboard');
@@ -43,7 +45,7 @@ export default function LoginPage() {
     return (
         <div className="container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-                <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--primary)' }}>Welcome Back</h1>
+                <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--primary)' }}>{t('auth.loginTitle')}</h1>
 
                 {error && (
                     <div style={{ padding: '0.75rem', backgroundColor: '#ffe5e5', color: 'var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1rem', fontSize: '0.875rem' }}>
@@ -53,7 +55,7 @@ export default function LoginPage() {
 
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '1rem' }}>
-                        <label className="label" htmlFor="email">Email</label>
+                        <label className="label" htmlFor="email">{t('auth.email')}</label>
                         <input
                             id="email"
                             type="email"
@@ -65,7 +67,7 @@ export default function LoginPage() {
                     </div>
 
                     <div style={{ marginBottom: '1.5rem' }}>
-                        <label className="label" htmlFor="password">Password</label>
+                        <label className="label" htmlFor="password">{t('auth.password')}</label>
                         <input
                             id="password"
                             type="password"
@@ -82,14 +84,14 @@ export default function LoginPage() {
                         style={{ width: '100%' }}
                         disabled={loading}
                     >
-                        {loading ? 'Logging In...' : 'Log In'}
+                        {loading ? t('auth.loggingIn') : t('auth.loginButton')}
                     </button>
                 </form>
 
                 <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                    Don't have an account?{' '}
+                    {t('auth.noAccount')}{' '}
                     <Link href="/signup" style={{ color: 'var(--primary)', fontWeight: '600' }}>
-                        Sign Up
+                        {t('auth.signupButton')}
                     </Link>
                 </p>
             </div>

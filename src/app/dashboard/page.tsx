@@ -2,7 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { calculateBMR, calculateTDEE, calculateTargets } from '@/lib/calculations';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { useLanguage } from '@/context/LanguageContext';
+
 
 interface FoodLog {
     id: string;
@@ -21,24 +25,37 @@ interface Profile {
     goal: string;
     gender: string;
     birthDate: string;
+    dailyMeals: number;
 }
+
+const MEAL_CONFIG: Record<number, { key: string; labelKey: string }[]> = {
+    3: [
+        { key: 'breakfast', labelKey: 'meals.breakfast' },
+        { key: 'lunch', labelKey: 'meals.lunch' },
+        { key: 'dinner', labelKey: 'meals.dinner' },
+    ],
+    4: [
+        { key: 'breakfast', labelKey: 'meals.breakfast' },
+        { key: 'lunch', labelKey: 'meals.lunch' },
+        { key: 'dinner', labelKey: 'meals.dinner' },
+        { key: 'snack', labelKey: 'meals.snack' },
+    ],
+    5: [
+        { key: 'breakfast', labelKey: 'meals.breakfast' },
+        { key: 'morning_snack', labelKey: 'meals.morning_snack' },
+        { key: 'lunch', labelKey: 'meals.lunch' },
+        { key: 'afternoon_snack', labelKey: 'meals.afternoon_snack' },
+        { key: 'dinner', labelKey: 'meals.dinner' },
+    ],
+};
 
 export default function DashboardPage() {
     const router = useRouter();
+    const { t } = useLanguage();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [logs, setLogs] = useState<FoodLog[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showAddFood, setShowAddFood] = useState(false);
-
-    // New Food Form State
-    const [newFood, setNewFood] = useState({
-        foodName: '',
-        calories: '',
-        protein: '',
-        carbs: '',
-        fat: '',
-        mealType: 'breakfast',
-    });
+    const [addingFoodTo, setAddingFoodTo] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -68,46 +85,17 @@ export default function DashboardPage() {
         }
     };
 
-    const handleAddFood = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const res = await fetch('/api/food', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...newFood,
-                    date: new Date(),
-                }),
-            });
-
-            if (res.ok) {
-                setShowAddFood(false);
-                setNewFood({
-                    foodName: '',
-                    calories: '',
-                    protein: '',
-                    carbs: '',
-                    fat: '',
-                    mealType: 'breakfast',
-                });
-                fetchData(); // Refresh data
-            }
-        } catch (error) {
-            console.error('Error adding food:', error);
-        }
-    };
-
     const handleLogout = async () => {
         await fetch('/api/auth/logout', { method: 'POST' });
         router.push('/login');
     };
 
     if (loading) {
-        return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
+        return <div className="container" style={{ padding: '2rem', textAlign: 'center' }}>{t('common.loading')}</div>;
     }
 
     if (!profile) {
-        return <div className="container">Profile not found. <a href="/onboarding">Complete setup</a></div>;
+        return <div className="container">{t('common.profileNotFound')} <a href="/onboarding">{t('common.completeSetup')}</a></div>;
     }
 
     // Calculate Targets
@@ -134,87 +122,152 @@ export default function DashboardPage() {
         fat: targets.fat - consumed.fat,
     };
 
+    const mealSections = MEAL_CONFIG[profile.dailyMeals || 4] || MEAL_CONFIG[4];
+
+    // Helper to group logs, handling legacy/unmapped types
+    const getLogsForSection = (sectionKey: string) => {
+        return logs.filter(log => {
+            if (log.mealType === sectionKey) return true;
+            // Map legacy 'snack' to 'snack' or 'afternoon_snack' if in 5-meal mode
+            if (log.mealType === 'snack') {
+                if (profile.dailyMeals === 5 && sectionKey === 'afternoon_snack') return true;
+                if (profile.dailyMeals !== 5 && sectionKey === 'snack') return true;
+            }
+            return false;
+        });
+    };
+
+    const handleDeleteLog = async (id: string) => {
+        if (!confirm(t('common.confirmDelete'))) return;
+
+        try {
+            const res = await fetch(`/api/food/${id}`, {
+                method: 'DELETE',
+            });
+
+            if (res.ok) {
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Error deleting log:', error);
+        }
+    };
+
     return (
-        <div className="container" style={{ padding: '2rem 0' }}>
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1 style={{ color: 'var(--primary)' }}>Today's Dashboard</h1>
-                <button onClick={handleLogout} className="btn btn-secondary">Log Out</button>
+        <div className="container">
+            <header className="header-responsive">
+                <h1 style={{ color: 'var(--primary)' }}>{t('dashboard.title')}</h1>
+                <div className="header-actions">
+
+                    <Link href="/profile" style={{ color: 'var(--text-primary)', textDecoration: 'none' }}>{t('dashboard.profile')}</Link>
+                    <Link href="/progress" style={{ color: 'var(--text-primary)', textDecoration: 'none' }}>{t('dashboard.progress')}</Link>
+                    <button onClick={handleLogout} className="btn btn-secondary">{t('common.logOut')}</button>
+                </div>
             </header>
 
             {/* Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="grid-responsive">
                 <div className="card" style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Calories</h3>
+                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{t('dashboard.calories')}</h3>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{consumed.calories} / {targets.calories}</p>
                     <p style={{ fontSize: '0.875rem', color: remaining.calories >= 0 ? 'var(--success)' : 'var(--error)' }}>
-                        {remaining.calories >= 0 ? `${remaining.calories} left` : `${Math.abs(remaining.calories)} over`}
+                        {remaining.calories >= 0 ? `${remaining.calories} ${t('dashboard.left')}` : `${Math.abs(remaining.calories)} ${t('dashboard.over')}`}
                     </p>
                 </div>
                 <div className="card" style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Protein</h3>
+                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{t('dashboard.protein')}</h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{consumed.protein}g / {targets.protein}g</p>
                 </div>
                 <div className="card" style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Carbs</h3>
+                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{t('dashboard.carbs')}</h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{consumed.carbs}g / {targets.carbs}g</p>
                 </div>
                 <div className="card" style={{ textAlign: 'center' }}>
-                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Fat</h3>
+                    <h3 style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>{t('dashboard.fat')}</h3>
                     <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{consumed.fat}g / {targets.fat}g</p>
                 </div>
             </div>
 
-            {/* Food Log Section */}
-            <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2>Food Log</h2>
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => setShowAddFood(!showAddFood)}
-                    >
-                        {showAddFood ? 'Cancel' : 'Add Food'}
-                    </button>
-                </div>
+            {/* Meal Sections */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {mealSections.map(section => {
+                    const sectionLogs = getLogsForSection(section.key);
+                    const sectionCalories = sectionLogs.reduce((acc, log) => acc + log.calories, 0);
+                    const sectionProtein = sectionLogs.reduce((acc, log) => acc + log.protein, 0);
+                    const sectionCarbs = sectionLogs.reduce((acc, log) => acc + log.carbs, 0);
+                    const sectionFat = sectionLogs.reduce((acc, log) => acc + log.fat, 0);
 
-                {showAddFood && (
-                    <AddFoodForm onAdd={() => {
-                        setShowAddFood(false);
-                        fetchData();
-                    }} />
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {logs.length === 0 ? (
-                        <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No food logged today.</p>
-                    ) : (
-                        logs.map(log => (
-                            <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid var(--border)' }}>
+                    return (
+                        <div key={section.key} className="card">
+                            <div className="section-header">
                                 <div>
-                                    <span style={{ fontWeight: 'bold', display: 'block' }}>{log.foodName}</span>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{log.mealType}</span>
+                                    <h2 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{t(section.labelKey)}</h2>
+                                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{sectionCalories} kcal | {sectionProtein} P | {sectionCarbs} C | {sectionFat} F</p>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <span style={{ fontWeight: 'bold', display: 'block', color: 'var(--primary)' }}>{log.calories} kcal</span>
-                                    <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                        P: {log.protein}g C: {log.carbs}g F: {log.fat}g
-                                    </span>
-                                </div>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={() => setAddingFoodTo(addingFoodTo === section.key ? null : section.key)}
+                                    style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+                                >
+                                    {addingFoodTo === section.key ? t('common.cancel') : t('dashboard.addFood')}
+                                </button>
                             </div>
-                        ))
-                    )}
-                </div>
+
+                            {addingFoodTo === section.key && (
+                                <AddFoodForm
+                                    initialMealType={section.key}
+                                    onAdd={() => {
+                                        setAddingFoodTo(null);
+                                        fetchData();
+                                    }}
+                                    onCancel={() => setAddingFoodTo(null)}
+                                />
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                {sectionLogs.length === 0 ? (
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>{t('dashboard.noFoodLogged')}</p>
+                                ) : (
+                                    sectionLogs.map(log => (
+                                        <div key={log.id} className="log-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div>
+                                                <span style={{ fontWeight: 'bold', display: 'block' }}>{log.foodName}</span>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                    P: {log.protein}g C: {log.carbs}g F: {log.fat}g
+                                                </span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{log.calories} kcal</span>
+                                                <button
+                                                    onClick={() => handleDeleteLog(log.id)}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}
+                                                    title={t('common.delete')}
+                                                >
+                                                    &times;
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
 }
 
-function AddFoodForm({ onAdd }: { onAdd: () => void }) {
+function AddFoodForm({ onAdd, onCancel, initialMealType }: { onAdd: () => void; onCancel: () => void; initialMealType: string }) {
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [selectedFood, setSelectedFood] = useState<any>(null);
-    const [weight, setWeight] = useState('100');
-    const [mealType, setMealType] = useState('breakfast');
+    const [quantity, setQuantity] = useState('1');
+    const [unit, setUnit] = useState('grams'); // 'grams' or 'serving'
+    const [mealType, setMealType] = useState(initialMealType);
     const [customMode, setCustomMode] = useState(false);
+    const [scanning, setScanning] = useState(false);
 
     // Custom food state
     const [customFood, setCustomFood] = useState({
@@ -228,7 +281,7 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
     useEffect(() => {
         if (searchQuery.length > 1 && !selectedFood) {
             const timeoutId = setTimeout(() => {
-                fetch(`/api/foods/search?q=${searchQuery}`)
+                fetch(`/api/foods?q=${searchQuery}`)
                     .then(res => res.json())
                     .then(data => setSearchResults(data.foods || []));
             }, 300);
@@ -238,10 +291,62 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
         }
     }, [searchQuery, selectedFood]);
 
+    useEffect(() => {
+        if (scanning) {
+            const scanner = new Html5QrcodeScanner(
+                "reader",
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                /* verbose= */ false
+            );
+            scanner.render(onScanSuccess, onScanFailure);
+
+            function onScanSuccess(decodedText: string, decodedResult: any) {
+                setSearchQuery(decodedText);
+                setScanning(false);
+                scanner.clear();
+            }
+
+            function onScanFailure(error: any) {
+                // handle scan failure, usually better to ignore and keep scanning.
+                // console.warn(`Code scan error = ${error}`);
+            }
+
+            return () => {
+                scanner.clear().catch(error => console.error("Failed to clear html5-qrcode scanner. ", error));
+            };
+        }
+    }, [scanning]);
+
     const handleSelectFood = (food: any) => {
         setSelectedFood(food);
         setSearchQuery(food.name);
         setSearchResults([]);
+        // Default to serving unit if available, otherwise grams
+        if (food.servingUnit) {
+            setUnit('serving');
+            setQuantity('1');
+        } else {
+            setUnit('grams');
+            setQuantity('100');
+        }
+    };
+
+    const calculateNutrition = () => {
+        if (!selectedFood) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+        let ratio = 0;
+        if (unit === 'grams') {
+            ratio = parseFloat(quantity) / 100;
+        } else if (unit === 'serving' && selectedFood.servingSize) {
+            ratio = (parseFloat(quantity) * selectedFood.servingSize) / 100;
+        }
+
+        return {
+            calories: Math.round(selectedFood.caloriesPer100g * ratio),
+            protein: Math.round(selectedFood.proteinPer100g * ratio * 10) / 10,
+            carbs: Math.round(selectedFood.carbsPer100g * ratio * 10) / 10,
+            fat: Math.round(selectedFood.fatPer100g * ratio * 10) / 10,
+        };
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -251,13 +356,10 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
         if (customMode) {
             foodData = { ...customFood, mealType };
         } else if (selectedFood) {
-            const ratio = parseFloat(weight) / 100;
+            const nutrition = calculateNutrition();
             foodData = {
                 foodName: selectedFood.name,
-                calories: Math.round(selectedFood.caloriesPer100g * ratio),
-                protein: Math.round(selectedFood.proteinPer100g * ratio * 10) / 10,
-                carbs: Math.round(selectedFood.carbsPer100g * ratio * 10) / 10,
-                fat: Math.round(selectedFood.fatPer100g * ratio * 10) / 10,
+                ...nutrition,
                 mealType,
             };
         } else {
@@ -282,28 +384,40 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
         }
     };
 
+    const nutrition = calculateNutrition();
+
     return (
-        <form onSubmit={handleSubmit} style={{ marginBottom: '2rem', padding: '1rem', backgroundColor: 'var(--background)', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <button
+                    type="button"
+                    onClick={() => setScanning(!scanning)}
+                    style={{ fontSize: '0.875rem', color: 'var(--primary)', background: 'none', border: 'none', textDecoration: 'underline' }}
+                >
+                    {scanning ? t('common.cancel') : 'Scan Barcode'}
+                </button>
                 <button
                     type="button"
                     onClick={() => { setCustomMode(!customMode); setSelectedFood(null); setSearchQuery(''); }}
                     style={{ fontSize: '0.875rem', color: 'var(--primary)', background: 'none', border: 'none', textDecoration: 'underline' }}
                 >
-                    {customMode ? 'Search Database' : 'Enter Custom Food'}
+                    {customMode ? t('dashboard.searchDatabase') : t('dashboard.enterCustomFood')}
                 </button>
             </div>
+
+            {scanning && <div id="reader" style={{ width: '100%', marginBottom: '1rem' }}></div>}
 
             {!customMode ? (
                 <>
                     <div style={{ marginBottom: '1rem', position: 'relative' }}>
-                        <label className="label">Search Food</label>
+                        <label className="label">{t('dashboard.searchFood')}</label>
                         <input
                             className="input"
                             value={searchQuery}
                             onChange={e => { setSearchQuery(e.target.value); setSelectedFood(null); }}
                             placeholder="e.g. Chicken Breast"
                             required
+                            autoFocus
                         />
                         {searchResults.length > 0 && (
                             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', zIndex: 10, maxHeight: '200px', overflowY: 'auto', boxShadow: 'var(--shadow-md)' }}>
@@ -313,7 +427,7 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                                         onClick={() => handleSelectFood(food)}
                                         style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}
                                     >
-                                        {food.name}
+                                        {food.nameEs && t('common.save') === 'Guardar' ? food.nameEs : food.name}
                                     </div>
                                 ))}
                             </div>
@@ -323,47 +437,51 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                     {selectedFood && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                             <div>
-                                <label className="label">Weight (g)</label>
+                                <label className="label">{t('dashboard.quantity')}</label>
                                 <input
                                     type="number"
                                     className="input"
-                                    value={weight}
-                                    onChange={e => setWeight(e.target.value)}
+                                    value={quantity}
+                                    onChange={e => setQuantity(e.target.value)}
                                     required
+                                    min="0"
+                                    step="0.1"
                                 />
                             </div>
                             <div>
-                                <label className="label">Meal Type</label>
+                                <label className="label">{t('dashboard.unit')}</label>
                                 <select
                                     className="input"
-                                    value={mealType}
-                                    onChange={e => setMealType(e.target.value)}
+                                    value={unit}
+                                    onChange={e => setUnit(e.target.value)}
                                 >
-                                    <option value="breakfast">Breakfast</option>
-                                    <option value="lunch">Lunch</option>
-                                    <option value="dinner">Dinner</option>
-                                    <option value="snack">Snack</option>
+                                    <option value="grams">Grams (g)</option>
+                                    {selectedFood.servingUnit && (
+                                        <option value="serving">
+                                            {selectedFood.servingUnit} ({selectedFood.servingSize}g)
+                                        </option>
+                                    )}
                                 </select>
                             </div>
                         </div>
                     )}
 
                     {selectedFood && (
-                        <div style={{ padding: '1rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
+                        <div style={{ padding: '1rem', backgroundColor: 'var(--background)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem' }}>
                             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                Calculated: {Math.round(selectedFood.caloriesPer100g * (parseFloat(weight) / 100))} kcal |
-                                P: {Math.round(selectedFood.proteinPer100g * (parseFloat(weight) / 100))}g |
-                                C: {Math.round(selectedFood.carbsPer100g * (parseFloat(weight) / 100))}g |
-                                F: {Math.round(selectedFood.fatPer100g * (parseFloat(weight) / 100))}g
+                                {t('dashboard.calculated')}: {nutrition.calories} kcal |
+                                P: {nutrition.protein}g |
+                                C: {nutrition.carbs}g |
+                                F: {nutrition.fat}g
                             </p>
                         </div>
                     )}
                 </>
             ) : (
                 <>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
-                            <label className="label">Food Name</label>
+                            <label className="label">{t('dashboard.foodName')}</label>
                             <input
                                 className="input"
                                 value={customFood.foodName}
@@ -371,23 +489,10 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                                 required
                             />
                         </div>
-                        <div>
-                            <label className="label">Meal Type</label>
-                            <select
-                                className="input"
-                                value={mealType}
-                                onChange={e => setMealType(e.target.value)}
-                            >
-                                <option value="breakfast">Breakfast</option>
-                                <option value="lunch">Lunch</option>
-                                <option value="dinner">Dinner</option>
-                                <option value="snack">Snack</option>
-                            </select>
-                        </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="form-grid">
                         <div>
-                            <label className="label">Calories</label>
+                            <label className="label">{t('dashboard.calories')}</label>
                             <input
                                 type="number"
                                 className="input"
@@ -397,7 +502,7 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                             />
                         </div>
                         <div>
-                            <label className="label">Protein (g)</label>
+                            <label className="label">{t('dashboard.protein')} (g)</label>
                             <input
                                 type="number"
                                 className="input"
@@ -406,7 +511,7 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                             />
                         </div>
                         <div>
-                            <label className="label">Carbs (g)</label>
+                            <label className="label">{t('dashboard.carbs')} (g)</label>
                             <input
                                 type="number"
                                 className="input"
@@ -415,7 +520,7 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                             />
                         </div>
                         <div>
-                            <label className="label">Fat (g)</label>
+                            <label className="label">{t('dashboard.fat')} (g)</label>
                             <input
                                 type="number"
                                 className="input"
@@ -427,7 +532,10 @@ function AddFoodForm({ onAdd }: { onAdd: () => void }) {
                 </>
             )}
 
-            <button type="submit" className="btn btn-primary" disabled={!customMode && !selectedFood}>Save Entry</button>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={onCancel} className="btn btn-secondary">{t('common.cancel')}</button>
+                <button type="submit" className="btn btn-primary" disabled={!customMode && !selectedFood}>{t('dashboard.saveEntry')}</button>
+            </div>
         </form>
     );
 }
