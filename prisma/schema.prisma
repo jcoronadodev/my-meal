@@ -75,4 +75,36 @@ model FoodItem {
   servingUnit    String?  // e.g. "slice", "unit", "cup"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  recipeIngredients RecipeIngredient[]
+}
+
+model Recipe {
+  id            String   @id @default(uuid())
+  name          String
+  nameEs        String?
+  description   String?
+  instructions  String   // Stored as markdown or simple text steps
+  prepTime      Int      // in minutes
+  cookTime      Int      // in minutes
+  servings      Int
+  calories      Int
+  protein       Float
+  carbs         Float
+  fat           Float
+  tags          String   // Comma separated tags: "Breakfast,HighProtein,Vegan"
+  image         String?  // URL or path to image
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  ingredients   RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id        String   @id @default(uuid())
+  recipeId  String
+  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+  foodId    String?
+  food      FoodItem? @relation(fields: [foodId], references: [id])
+  name      String   // Name of ingredient if not linked to FoodItem, or override
+  amount    Float
+  unit      String
 }

@@ -95,6 +95,40 @@ async function main() {
         });
         console.log(`Created food: ${food.name}`);
     }
+
+    // Seed Recipes
+    const recipes = require('./recipes');
+    await prisma.recipeIngredient.deleteMany({}); // Clear existing ingredients first
+    await prisma.recipe.deleteMany({}); // Clear existing recipes
+    console.log('Deleted existing recipes.');
+
+    for (const recipe of recipes) {
+        const { ingredients, ...recipeData } = recipe;
+        const createdRecipe = await prisma.recipe.create({
+            data: recipeData,
+        });
+
+        for (const ingredient of ingredients) {
+            let foodItem = null;
+            if (ingredient.foodName) {
+                foodItem = await prisma.foodItem.findUnique({
+                    where: { name: ingredient.foodName },
+                });
+            }
+
+            await prisma.recipeIngredient.create({
+                data: {
+                    recipeId: createdRecipe.id,
+                    name: ingredient.name,
+                    amount: ingredient.amount,
+                    unit: ingredient.unit,
+                    foodId: foodItem ? foodItem.id : undefined,
+                },
+            });
+        }
+        console.log(`Created recipe: ${recipe.name}`);
+    }
+
     console.log('Seeding finished.');
 }
 
