@@ -83,7 +83,9 @@ model Recipe {
   name          String
   nameEs        String?
   description   String?
+  descriptionEs String?
   instructions  String   // Stored as markdown or simple text steps
+  instructionsEs String?
   prepTime      Int      // in minutes
   cookTime      Int      // in minutes
   servings      Int
@@ -105,6 +107,7 @@ model RecipeIngredient {
   foodId    String?
   food      FoodItem? @relation(fields: [foodId], references: [id])
   name      String   // Name of ingredient if not linked to FoodItem, or override
+  nameEs    String?
   amount    Float
   unit      String
 }

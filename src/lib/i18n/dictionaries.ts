@@ -28,6 +28,7 @@ export type Dictionary = {
         title: string;
         profile: string;
         progress: string;
+        recipes: string;
         calories: string;
         protein: string;
         carbs: string;
@@ -45,6 +46,18 @@ export type Dictionary = {
         calculated: string;
         quantity: string;
         unit: string;
+        nutritionalDetails: string;
+        close: string;
+        placeholders: {
+            breakfast: string;
+            lunch: string;
+            dinner: string;
+            snack: string;
+        };
+        units: {
+            grams: string;
+            serving: string;
+        };
     };
     meals: {
         breakfast: string;
@@ -105,6 +118,30 @@ export type Dictionary = {
         notesPlaceholder: string;
         saveCheckIn: string;
     };
+    recipes: {
+        title: string;
+        searchPlaceholder: string;
+        all: string;
+        loading: string;
+        calories: string;
+        protein: string;
+        carbs: string;
+        fat: string;
+        ingredients: string;
+        instructions: string;
+        addToMeal: string;
+        addToLog: string;
+        adding: string;
+        toastMessage: string;
+        breakfast: string;
+        lunch: string;
+        dinner: string;
+        snack: string;
+        highProtein: string;
+        lowCarb: string;
+        vegan: string;
+        keto: string;
+    };
 };
 
 export const dictionaries: Record<'en' | 'es', Dictionary> = {
@@ -138,6 +175,7 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             title: "Today's Dashboard",
             profile: 'Profile',
             progress: 'Progress',
+            recipes: 'Recipes',
             calories: 'Calories',
             protein: 'Protein',
             carbs: 'Carbs',
@@ -155,6 +193,18 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             calculated: 'Calculated',
             quantity: 'Quantity',
             unit: 'Unit',
+            nutritionalDetails: 'Nutritional Details',
+            close: 'Close',
+            placeholders: {
+                breakfast: 'e.g. Scrambled Eggs',
+                lunch: 'e.g. Grilled Chicken',
+                dinner: 'e.g. Salmon Salad',
+                snack: 'e.g. Apple',
+            },
+            units: {
+                grams: 'Grams (g)',
+                serving: 'Serving',
+            },
         },
         meals: {
             breakfast: 'Breakfast',
@@ -215,6 +265,30 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             notesPlaceholder: 'How are you feeling? Any non-scale victories?',
             saveCheckIn: 'Save Check-in',
         },
+        recipes: {
+            title: 'Recipes',
+            searchPlaceholder: 'Search recipes...',
+            all: 'All',
+            loading: 'Loading recipes...',
+            calories: 'Cal',
+            protein: 'Prot',
+            carbs: 'Carb',
+            fat: 'Fat',
+            ingredients: 'Ingredients',
+            instructions: 'Instructions',
+            addToMeal: 'Add to Meal',
+            addToLog: 'Add to Log',
+            adding: 'Adding...',
+            toastMessage: 'Recipe added to log!',
+            breakfast: 'Breakfast',
+            lunch: 'Lunch',
+            dinner: 'Dinner',
+            snack: 'Snack',
+            highProtein: 'High Protein',
+            lowCarb: 'Low Carb',
+            vegan: 'Vegan',
+            keto: 'Keto',
+        },
     },
     es: {
         auth: {
@@ -243,9 +317,10 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             saving: 'Guardando...',
         },
         dashboard: {
-            title: 'Panel de Hoy',
+            title: 'Dashboard',
             profile: 'Perfil',
             progress: 'Progreso',
+            recipes: 'Recetas',
             calories: 'Calorías',
             protein: 'Proteína',
             carbs: 'Carbohidratos',
@@ -263,6 +338,18 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             calculated: 'Calculado',
             quantity: 'Cantidad',
             unit: 'Unidad',
+            nutritionalDetails: 'Detalles Nutricionales',
+            close: 'Cerrar',
+            placeholders: {
+                breakfast: 'ej. Huevos Revueltos',
+                lunch: 'ej. Pollo a la Parrilla',
+                dinner: 'ej. Ensalada de Salmón',
+                snack: 'ej. Manzana',
+            },
+            units: {
+                grams: 'Gramos (g)',
+                serving: 'Porción',
+            },
         },
         meals: {
             breakfast: 'Desayuno',
@@ -322,6 +409,30 @@ export const dictionaries: Record<'en' | 'es', Dictionary> = {
             optional: '(Opcional)',
             notesPlaceholder: '¿Cómo te sientes? ¿Alguna victoria no relacionada con la balanza?',
             saveCheckIn: 'Guardar Check-in',
+        },
+        recipes: {
+            title: 'Recetas',
+            searchPlaceholder: 'Buscar recetas...',
+            all: 'Todo',
+            loading: 'Cargando recetas...',
+            calories: 'Cal',
+            protein: 'Prot',
+            carbs: 'Carb',
+            fat: 'Grasa',
+            ingredients: 'Ingredientes',
+            instructions: 'Instrucciones',
+            addToMeal: 'Agregar a la Comida',
+            addToLog: 'Agregar al Registro',
+            adding: 'Agregando...',
+            toastMessage: '¡Receta agregada al registro!',
+            breakfast: 'Desayuno',
+            lunch: 'Almuerzo',
+            dinner: 'Cena',
+            snack: 'Merienda',
+            highProtein: 'Alto en Proteína',
+            lowCarb: 'Bajo en Carbohidratos',
+            vegan: 'Vegano',
+            keto: 'Keto',
         },
     },
 };

@@ -120,6 +120,7 @@ async function main() {
                 data: {
                     recipeId: createdRecipe.id,
                     name: ingredient.name,
+                    nameEs: ingredient.nameEs,
                     amount: ingredient.amount,
                     unit: ingredient.unit,
                     foodId: foodItem ? foodItem.id : undefined,

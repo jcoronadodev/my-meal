@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 interface Ingredient {
     id: string;
     name: string;
+    nameEs: string | null;
     amount: number;
     unit: string;
 }
@@ -15,6 +16,7 @@ interface Recipe {
     name: string;
     nameEs: string | null;
     description: string | null;
+    descriptionEs: string | null;
     calories: number;
     protein: number;
     carbs: number;
@@ -23,6 +25,7 @@ interface Recipe {
     prepTime: number;
     cookTime: number;
     instructions: string;
+    instructionsEs: string | null;
     ingredients: Ingredient[];
 }
 
@@ -124,19 +127,45 @@ export default function RecipesPage() {
         return language === 'es' && recipe.nameEs ? recipe.nameEs : recipe.name;
     };
 
+    const getRecipeDescription = (recipe: Recipe) => {
+        return language === 'es' && recipe.descriptionEs ? recipe.descriptionEs : recipe.description;
+    };
+
+    const getRecipeInstructions = (recipe: Recipe) => {
+        return language === 'es' && recipe.instructionsEs ? recipe.instructionsEs : recipe.instructions;
+    };
+
+    const getIngredientName = (ingredient: Ingredient) => {
+        return language === 'es' && ingredient.nameEs ? ingredient.nameEs : ingredient.name;
+    };
+
     const tags = ['Breakfast', 'Lunch', 'Dinner', 'Snack', 'High Protein', 'Low Carb', 'Vegan', 'Keto'];
+
+    const getTagLabel = (tag: string) => {
+        const keyMap: Record<string, string> = {
+            'Breakfast': 'breakfast',
+            'Lunch': 'lunch',
+            'Dinner': 'dinner',
+            'Snack': 'snack',
+            'High Protein': 'highProtein',
+            'Low Carb': 'lowCarb',
+            'Vegan': 'vegan',
+            'Keto': 'keto'
+        };
+        return keyMap[tag] ? t(`recipes.${keyMap[tag]}` as any) : tag;
+    };
 
     return (
         <div className="container" style={{ paddingBottom: '5rem' }}>
             <header className="header-responsive" style={{ marginBottom: '1rem' }}>
-                <h1 style={{ color: 'var(--primary)' }}>Recipes</h1>
+                <h1 style={{ color: 'var(--primary)' }}>{t('recipes.title')}</h1>
             </header>
 
             {/* Search and Filter */}
             <div style={{ marginBottom: '1.5rem' }}>
                 <input
                     type="text"
-                    placeholder={t('dashboard.searchFood')}
+                    placeholder={t('recipes.searchPlaceholder')}
                     className="input"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -148,7 +177,7 @@ export default function RecipesPage() {
                         onClick={() => setSelectedTag(null)}
                         style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
                     >
-                        All
+                        {t('recipes.all')}
                     </button>
                     {tags.map(tag => (
                         <button
@@ -157,7 +186,7 @@ export default function RecipesPage() {
                             onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
                             style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', whiteSpace: 'nowrap' }}
                         >
-                            {tag}
+                            {getTagLabel(tag)}
                         </button>
                     ))}
                 </div>
@@ -165,7 +194,7 @@ export default function RecipesPage() {
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                    {t('common.loading')}
+                    {t('recipes.loading')}
                 </div>
             ) : (
                 <div className="grid-responsive">
@@ -211,7 +240,7 @@ export default function RecipesPage() {
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                                     {recipe.tags.split(',').slice(0, 2).map(tag => (
                                         <span key={tag} style={{ backgroundColor: 'var(--background)', color: 'var(--primary)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.7rem' }}>
-                                            {tag.trim()}
+                                            {getTagLabel(tag.trim())}
                                         </span>
                                     ))}
                                 </div>
@@ -246,10 +275,19 @@ export default function RecipesPage() {
                             overflowY: 'auto',
                             display: 'flex',
                             flexDirection: 'column',
-                            animation: 'slideUp 0.3s ease-out'
+                            animation: 'slideUp 0.3s ease-out',
+                            paddingBottom: '2rem',
+                            scrollbarWidth: 'none',
+                            msOverflowStyle: 'none'
                         }}
+                        className="no-scrollbar"
                         onClick={e => e.stopPropagation()}
                     >
+                        <style jsx>{`
+                            .no-scrollbar::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
                         <div style={{ height: '200px', backgroundColor: '#e0e0e0', position: 'relative', flexShrink: 0 }}>
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <span style={{ fontSize: '5rem' }}>🍲</span>
@@ -290,33 +328,33 @@ export default function RecipesPage() {
                                     ♥
                                 </button>
                             </div>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>{selectedRecipe.description}</p>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>{getRecipeDescription(selectedRecipe)}</p>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', marginBottom: '1.5rem', backgroundColor: 'var(--background)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Cal</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('recipes.calories')}</div>
                                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{selectedRecipe.calories}</div>
                                 </div>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Prot</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('recipes.protein')}</div>
                                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{selectedRecipe.protein}g</div>
                                 </div>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Carb</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('recipes.carbs')}</div>
                                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{selectedRecipe.carbs}g</div>
                                 </div>
                                 <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Fat</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('recipes.fat')}</div>
                                     <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{selectedRecipe.fat}g</div>
                                 </div>
                             </div>
 
                             <div style={{ marginBottom: '1.5rem' }}>
-                                <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Ingredients</h3>
+                                <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>{t('recipes.ingredients')}</h3>
                                 <ul style={{ listStyle: 'none', padding: 0 }}>
                                     {selectedRecipe.ingredients.map((ing: Ingredient) => (
                                         <li key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                            <span>{ing.name}</span>
+                                            <span>{getIngredientName(ing)}</span>
                                             <span style={{ color: 'var(--text-secondary)' }}>{ing.amount} {ing.unit}</span>
                                         </li>
                                     ))}
@@ -324,14 +362,14 @@ export default function RecipesPage() {
                             </div>
 
                             <div style={{ marginBottom: '2rem' }}>
-                                <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Instructions</h3>
+                                <h3 style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>{t('recipes.instructions')}</h3>
                                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', whiteSpace: 'pre-line', lineHeight: '1.6' }}>
-                                    {selectedRecipe.instructions}
+                                    {getRecipeInstructions(selectedRecipe)}
                                 </div>
                             </div>
 
                             <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>Add to Meal</label>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{t('recipes.addToMeal')}</label>
                                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                                     <select
                                         value={mealType}
@@ -339,10 +377,10 @@ export default function RecipesPage() {
                                         className="input"
                                         style={{ flex: 1 }}
                                     >
-                                        <option value="breakfast">Breakfast</option>
-                                        <option value="lunch">Lunch</option>
-                                        <option value="dinner">Dinner</option>
-                                        <option value="snack">Snack</option>
+                                        <option value="breakfast">{t('recipes.breakfast')}</option>
+                                        <option value="lunch">{t('recipes.lunch')}</option>
+                                        <option value="dinner">{t('recipes.dinner')}</option>
+                                        <option value="snack">{t('recipes.snack')}</option>
                                     </select>
                                     <button
                                         onClick={handleAddToLog}
@@ -350,7 +388,7 @@ export default function RecipesPage() {
                                         className="btn btn-primary"
                                         style={{ flex: 1 }}
                                     >
-                                        {adding ? 'Adding...' : 'Add to Log'}
+                                        {adding ? t('recipes.adding') : t('recipes.addToLog')}
                                     </button>
                                 </div>
                             </div>
@@ -374,7 +412,7 @@ export default function RecipesPage() {
                     zIndex: 2000,
                     animation: 'fadeIn 0.3s ease-out'
                 }}>
-                    Recipe added to log!
+                    {t('recipes.toastMessage')}
                 </div>
             )}
         </div>

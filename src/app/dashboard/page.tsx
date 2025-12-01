@@ -56,6 +56,7 @@ export default function DashboardPage() {
     const [logs, setLogs] = useState<FoodLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [addingFoodTo, setAddingFoodTo] = useState<string | null>(null);
+    const [selectedLog, setSelectedLog] = useState<FoodLog | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -229,7 +230,12 @@ export default function DashboardPage() {
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontStyle: 'italic' }}>{t('dashboard.noFoodLogged')}</p>
                                 ) : (
                                     sectionLogs.map(log => (
-                                        <div key={log.id} className="log-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div
+                                            key={log.id}
+                                            className="log-item"
+                                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                                            onClick={() => setSelectedLog(log)}
+                                        >
                                             <div>
                                                 <span style={{ fontWeight: 'bold', display: 'block' }}>{log.foodName}</span>
                                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -239,7 +245,10 @@ export default function DashboardPage() {
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                 <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{log.calories} kcal</span>
                                                 <button
-                                                    onClick={() => handleDeleteLog(log.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteLog(log.id);
+                                                    }}
                                                     style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}
                                                     title={t('common.delete')}
                                                 >
@@ -254,6 +263,84 @@ export default function DashboardPage() {
                     );
                 })}
             </div>
+
+            {/* Food Details Modal */}
+            {selectedLog && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    zIndex: 1000,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '1rem'
+                }} onClick={() => setSelectedLog(null)}>
+                    <div
+                        style={{
+                            backgroundColor: 'var(--surface)',
+                            width: '100%',
+                            maxWidth: '400px',
+                            borderRadius: 'var(--radius-md)',
+                            padding: '1.5rem',
+                            position: 'relative',
+                            animation: 'fadeIn 0.2s ease-out'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setSelectedLog(null)}
+                            style={{
+                                position: 'absolute',
+                                top: '1rem',
+                                right: '1rem',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                color: 'var(--text-secondary)'
+                            }}
+                        >
+                            &times;
+                        </button>
+
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem', paddingRight: '2rem' }}>{selectedLog.foodName}</h2>
+                        <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>{t('dashboard.nutritionalDetails')}</h3>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div style={{ backgroundColor: 'var(--background)', padding: '1rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
+                                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t('dashboard.calories')}</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary)' }}>{selectedLog.calories}</div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('dashboard.protein')}</span>
+                                    <span style={{ fontWeight: 'bold' }}>{selectedLog.protein}g</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('dashboard.carbs')}</span>
+                                    <span style={{ fontWeight: 'bold' }}>{selectedLog.carbs}g</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('dashboard.fat')}</span>
+                                    <span style={{ fontWeight: 'bold' }}>{selectedLog.fat}g</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => setSelectedLog(null)}
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                        >
+                            {t('dashboard.close')}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -386,6 +473,12 @@ function AddFoodForm({ onAdd, onCancel, initialMealType }: { onAdd: () => void; 
 
     const nutrition = calculateNutrition();
 
+    // Determine placeholder based on meal type
+    const getPlaceholder = () => {
+        const key = initialMealType.includes('snack') ? 'snack' : initialMealType;
+        return t(`dashboard.placeholders.${key}`);
+    };
+
     return (
         <form onSubmit={handleSubmit} style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -415,7 +508,7 @@ function AddFoodForm({ onAdd, onCancel, initialMealType }: { onAdd: () => void; 
                             className="input"
                             value={searchQuery}
                             onChange={e => { setSearchQuery(e.target.value); setSelectedFood(null); }}
-                            placeholder="e.g. Chicken Breast"
+                            placeholder={getPlaceholder()}
                             required
                             autoFocus
                         />
@@ -455,7 +548,7 @@ function AddFoodForm({ onAdd, onCancel, initialMealType }: { onAdd: () => void; 
                                     value={unit}
                                     onChange={e => setUnit(e.target.value)}
                                 >
-                                    <option value="grams">Grams (g)</option>
+                                    <option value="grams">{t('dashboard.units.grams')}</option>
                                     {selectedFood.servingUnit && (
                                         <option value="serving">
                                             {selectedFood.servingUnit} ({selectedFood.servingSize}g)
